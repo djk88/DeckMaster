@@ -1,0 +1,231 @@
+﻿@model IEnumerable<WebSecurity_Day03.Models.Product>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+@foreach(var item in Model)
+{
+<div class="container">
+    <main role="main" class="pb-3">
+        <div class="row">
+                <div class="col-3 " style="padding-top:40px;">
+                    <img src="~/images/@item.Image" style="max-width: 300px" />
+                    <p class="fs-2">$<span id="@item.ID-itemPrice">@item.Price</span>@item.Currency</p>
+                    </div>
+                <div class="col-6" style="padding-top:40px;">
+                <p>@item.Description</p>
+                </div>
+
+                @if (User.Identity.IsAuthenticated)
+                {
+                    <div class="col-3" style="padding-top:40px;">
+                        <button id="@item.ID-add" type="submit" class="btn btn-primary" style="width: 175px" onclick="updateShoppingCart(event)">Add to cart</button>
+                        <button id="@item.ID-remove" type="submit" class="btn btn-secondary" style="width: 175px; margin-top: 3px" onclick="updateShoppingCart(event)">Remove from cart</button>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>
+                                        Qty
+                                    </th>
+                                    <th>
+                                        Amount
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <p id="@item.ID-quantity" class="itemQuantity">0</p>
+                                    </td>
+                                    <td>
+                                        <p>$<span id="@item.ID-amount" class="itemAmount">0</span><span id="currency">@item.Currency</span> </p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                }    
+           </div>
+    </main>
+</div>
+}
+
+@if (!User.Identity.IsAuthenticated)
+{
+    <div class="row">
+        <div class="col-3">
+            <a id="" type="submit" class="btn btn-primary" style="width: 175px" asp-area="Identity" asp-page="/Account/Login">Login to purchase</a>
+        </div>
+    </div>
+}
+
+
+@if (User.Identity.IsAuthenticated)
+{
+    @*Totals*@
+    <div class="row justify-content-end">
+        <div class="col-3 ">
+            <div id="paypal-button"></div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>
+                            Items
+                        </th>
+                        <th>
+                            Amount
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <p id="totalItems">0</p>
+                        </td>
+                        <td>
+                            <p>$<span id="totalAmount">0</span>CAD</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+}
+
+<script>
+    function updateShoppingCart(event) {
+        var clickedId = event.target.id;
+        var elementIdSplit = clickedId.split('-');
+        var id = elementIdSplit[0];
+        var action = elementIdSplit[1];
+
+        ChangeCart(id, action);
+    }
+
+    function ChangeCart(clickedId, action)
+    {
+        var itemPriceId = "#" + clickedId + "-itemPrice";
+        var itemQtyId = "#" + clickedId + "-quantity";
+        var itemAmtId = "#" + clickedId + "-amount";
+
+        var quantity = $(itemQtyId).html();
+
+        if (action=="add") {
+            quantity++;
+        } else {
+            quantity--;
+            if (quantity < 0) {
+                quantity = 0;
+            }
+        }
+
+        $(itemQtyId).text(quantity);
+
+        //Calculate new amount
+        var amount = $(itemPriceId).html();
+
+        var newAmount = (amount * quantity).toFixed(2);
+
+        $(itemAmtId).text(newAmount);
+
+        //Calculate totals
+        var totalQuantity = 0;
+        $('.itemQuantity').each(function () {
+            var thisQuantity = $(this).html();
+            totalQuantity += parseInt(thisQuantity);
+        });
+        var totalAmount = 0.00;
+        $('.itemAmount').each(function () {
+            var thisAmount = $(this).html();
+            totalAmount += parseFloat(thisAmount);
+        });
+
+        $("#totalItems").text(totalQuantity);
+        $("#totalAmount").text(totalAmount.toFixed(2));
+    }
+</script>
+
+<script src="https://www.paypalobjects.com/api/checkout.js"></script>
+<script>
+    paypal.Button.render({
+        env: 'sandbox', // Or ' production '
+        style: { // You can customize your button here.
+            size: 'small',
+            color: 'silver',
+            shape: 'pill',
+            label: 'checkout'
+        },
+        client: {
+            // You need to change this to your client ID
+            sandbox: 'AeLNZl03vdQTzV3TdQ-byCtfCxyuB2ctzlanD6NGWYCTDhxlpjHjM9L1sP3wlvBXqNmco5AnvI80_ucD',
+        },
+        commit: true, // Show a 'Pay Now' button
+        payment: function (data, actions) {
+            return actions.payment.create({
+                payment: {
+                    transactions: [{
+                        custom: 'Custom data goes here!',
+                        amount: {
+                            total:
+                                document.getElementById("totalAmount").innerHTML
+                            , currency:
+                                document.getElementById("currency").innerHTML
+                        }
+                    }]
+                }
+            });
+        },
+        onAuthorize: function (data, actions) {
+            return actions.payment.execute().then(function (payment) {
+                console.log("This is what comes back from Paypal: ")
+                console.log(payment);
+                console.log("-------------------------------------")
+                var dataObject = {
+                    "cart": payment.cart,
+                    "intent": payment.intent,
+                    "paymentID": payment.id,
+                    "create_time": payment.create_time,
+                    "paymentState": payment.state,
+                    "payerEmail": payment.payer.payer_info.email,
+                    "payerID": payment.payer.payer_info.payer_id,
+                    "payerFirstName": payment.payer.payer_info.first_name,
+                    "payerLastName": payment.payer.payer_info.last_name,
+                    "payerMiddleName": payment.payer.payer_info.middle_name,
+                    "payerCountryCode": payment.payer.payer_info.country_code,
+                    "paymentMethod": payment.payer.payment_method,
+                    "payerStatus": payment.payer.status,
+                    "amount": payment.transactions[0].amount.total,
+                    "currency": payment.transactions[0].amount.currency,
+                    "custom": payment.transactions[0].custom
+                }
+                // The payment is complete!
+                // You can now show a confirmation message to the customer
+                $.ajax({
+                    type: "post",
+                    url: "/Home/PaySuccess",
+                    data: JSON.stringify(dataObject),
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    //after success
+                    success: function (msg) {
+                        console.log("Data: " + JSON.stringify(data));
+                        window.location.href
+                            = "/Home/Confirmation?confirmationId=" + data.paymentID;
+                    },
+                    //after fail
+                    error: function (msg) {
+                        alert("fail: " + JSON.stringify(msg));
+                    }
+                });
+            })
+        },
+        onCancel: function (data, actions) {
+            /*
+            * Buyer cancelled the payment
+            */
+        },
+    }, '#paypal-button');
+</script>
+

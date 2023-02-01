@@ -1,0 +1,52 @@
+﻿@model IEnumerable<WebSecurity_Day03.Models.IPN>
+
+@{
+    ViewData["Title"] = "Transactions";
+}
+
+<div class="row">
+    <div class="col-sm-6">
+        <span class="display-6">Transactions</span>
+    </div>
+    <div class="col-sm-6">
+    <span class="d-flex justify-content-end">
+        <img src="/images/paypal.png" alt="Paypal" style="max-width: 200px; padding-bottom: 10px"/>
+    </span>
+    </div>
+</div>
+<table class="table">
+    <thead>
+        <tr>
+            <th class="d-none d-lg-block">Payment ID</th>
+            <th>Created</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Amount</th>
+            <th>MOP</th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.paymentID)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.create_time)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.payerFirstName)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.payerEmail)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.amount)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.paymentMethod)
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
