@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 using WebSecurity_Day03.Data;
 using WebSecurity_Day03.Models;
+using WebSecurity_Day03.Repositories;
 
 namespace WebSecurity_Day03.Controllers
 {
@@ -23,6 +24,11 @@ namespace WebSecurity_Day03.Controllers
         // Item price is set through the ViewBag.
         public IActionResult Index()
         {
+            if(User != null && User.Identity.IsAuthenticated){
+                UserRepo userRepo = new UserRepo(_context);
+                MyRegisteredUser user = userRepo.GetUserByEmail(User.Identity.Name);
+                HttpContext.Session.SetString("FirstName", user.FirstName);
+            }
             return View("Index", "3.55|CAD");
         }
 

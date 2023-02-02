@@ -31,8 +31,11 @@ namespace WebSecurity_Day03.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public ActionResult Create(RoleVM role)
         {
+            var token = HttpContext.Request.Form["__RequestVerificationToken"];
+
             RoleRepo roleRepo = new RoleRepo(_context);
 
             roleRepo.CreateRole(role.RoleName);
